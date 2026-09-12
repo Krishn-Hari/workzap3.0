@@ -122,20 +122,30 @@ exports.postJob = (req, res, next) => {
 
 
 exports.getHired = (req, res, next) => {
-  const user = req.session.user;
+  if (!req.session.isLoggedIn || !req.session.user) {
+    return res.redirect('/Login');
+  }
+  const userId = req.session.user.id;
 
-  const hiredWorkers = user.hiredWorkers || [];
-
-  return Worker.find().then(registeredAc => {
-    const workerDetails = registeredAc.filter(worker =>
-      hiredWorkers.includes(worker._id.toString())
-    );
-
-    res.render('Hired', {
-      matchedAccounts: workerDetails // Use filtered details here
+  User.findById(userId)
+    .then(userDoc => {
+      if (!userDoc) {
+        return res.redirect('/Login');
+      }
+      
+      const hiredWorkers = userDoc.hiredWorkers || [];
+      
+      return Worker.find({ _id: { $in: hiredWorkers } })
+        .then(workerDetails => {
+          res.render('Hired', {
+            matchedAccounts: workerDetails
+          });
+        });
+    })
+    .catch(err => {
+      console.error("Error fetching hired workers:", err);
+      res.status(500).send("Internal Server Error");
     });
-  });
-
 };
 
 exports.getWorker = (req, res, next) => {
@@ -395,18 +405,19 @@ exports.postApplicants = (req, res, next) => {
 }
 
 exports.postHireApplicant = (req, res, next) => {
-  const user = req.session.user;
+  if (!req.session.isLoggedIn || !req.session.user) {
+    return res.redirect('/Login');
+  }
+  const userId = req.session.user.id;
   const { email } = req.body;
 
-  Worker.find()
-    .then(workers => {
-      const workerToHire = workers.find(worker => worker.email === email);
+  Worker.findOne({ email: email })
+    .then(workerToHire => {
       if (!workerToHire) {
         return res.status(404).send("Worker not found");
       }
 
-      User.find().then(accounts => {
-        const matchedAccount = accounts.find(account => account.email === user.email);
+      return User.findById(userId).then(matchedAccount => {
         if (!matchedAccount) {
           return res.status(404).send("User not found");
         }
@@ -418,26 +429,21 @@ exports.postHireApplicant = (req, res, next) => {
 
         // Prevent duplicate entries
         const workerIdStr = workerToHire._id.toString();
-        if (!hiredWorkers.includes(workerIdStr)) {
+        if (!hiredWorkers.some(id => id.toString() === workerIdStr)) {
           hiredWorkers.push(workerIdStr);
         }
 
         matchedAccount.hiredWorkers = hiredWorkers;
 
         // Perform update
-        matchedAccount.save()
-          .then(() => {
-            console.log("User account updated with hired worker.");
-            res.redirect('/dashboard');
-          })
-          .catch(err => {
-            console.error("Error updating user account:", err);
-            res.status(500).send("Internal Server Error");
-          });
+        return matchedAccount.save().then(() => {
+          console.log("User account updated with hired worker.");
+          res.redirect('/dashboard');
+        });
       });
     })
     .catch(err => {
-      console.error("Error fetching workers:", err);
+      console.error("Error hiring worker:", err);
       res.status(500).send("Internal Server Error");
     });
 };
