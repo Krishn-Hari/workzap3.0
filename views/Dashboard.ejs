@@ -11,42 +11,11 @@
 <body>
     <%- include('partials/header', { user: user, userType: userType }) %>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <!-- <aside class="sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-briefcase"></i>
-                <h2>WorkForce</h2>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="/host" class=""><i class="fas fa-home"></i> Host-home</a>
-                <a href="/dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="/payroll"><i class="fas fa-users"></i> Payroll</a>
-                <a href="/report"><i class="fas fa-chart-line"></i> Reports</a>
-                <a href="/setting"><i class="fas fa-cog"></i> Settings</a>
-            </nav>
-        </aside> -->
+
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Header -->
-            <!-- <header class="dashboard-header">
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search employees...">
-                </div>
-                <div class="header-actions">
-                    <button class="notification-btn">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span>
-                    </button>
-                    <div class="user-profile">
-                        <img src="https://th.bing.com/th/id/OIP.g3Q4NOIaEpPD7r_gFgHzOwAAAA?w=201&h=201&c=7&r=0&o=5&dpr=1.4&pid=1.7" alt="Admin Profile">
-                        <span>
-                            <%= user.name %>
-                        </span>
-                    </div>
-                </div>
-            </header> -->
+
 
             <!-- Dashboard Overview -->
             <section class="dashboard-overview">
@@ -158,10 +127,7 @@
                     <% }else { %> 
                         <% PostedJob.forEach(Job => { %>
                         <div class="employee-card">
-                            <!-- <div class="employee-header">
-                                <img src="https://th.bing.com/th/id/OIP.g3Q4NOIaEpPD7r_gFgHzOwAAAA?w=201&h=201&c=7&r=0&o=5&dpr=1.4&pid=1.7" alt="Employee Photo">
-                                <div class="employee-status active"></div>
-                            </div> -->
+
                             <div class="employee-info">
                                 
                                 <h3><%= Job.JobTitle %></h3>

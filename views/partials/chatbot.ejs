@@ -1,0 +1,251 @@
+
+  /* Chatbot Styles */
+  #chatbot-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  #chatbot-toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+  }
+  
+  #chatbot-toggle:hover {
+    transform: scale(1.1);
+  }
+  
+  #chatbot-window {
+    display: none;
+    position: absolute;
+    bottom: 75px;
+    right: 0;
+    width: 350px;
+    height: 450px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  #chatbot-header {
+    background-color: #007bff;
+    color: white;
+    padding: 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #chatbot-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  #chatbot-messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .chat-message {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  
+  .chat-message.user {
+    align-self: flex-end;
+    background-color: #007bff;
+    color: white;
+    border-bottom-right-radius: 2px;
+  }
+  
+  .chat-message.bot {
+    align-self: flex-start;
+    background-color: #e9ecef;
+    color: #333;
+    border-bottom-left-radius: 2px;
+  }
+  
+  #chatbot-input-container {
+    display: flex;
+    padding: 10px;
+    background: white;
+    border-top: 1px solid #ddd;
+  }
+  
+  #chatbot-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    outline: none;
+  }
+  
+  #chatbot-send {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin-left: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .chatbot-loading {
+    font-style: italic;
+    color: #888;
+    font-size: 12px;
+  }
+</style>
+
+<!-- Chatbot HTML -->
+<div id="chatbot-container">
+  <button id="chatbot-toggle" title="Chat with AI">
+    <i class="fas fa-comment-dots"></i>
+  </button>
+  <div id="chatbot-window">
+    <div id="chatbot-header">
+      <span>AI Assistant</span>
+      <button id="chatbot-close">&times;</button>
+    </div>
+    <div id="chatbot-messages">
+      <div class="chat-message bot">Hello! I'm your AI assistant. How can I help you today?</div>
+    </div>
+    <div id="chatbot-input-container">
+      <input type="text" id="chatbot-input" placeholder="Ask something..." autocomplete="off">
+      <button id="chatbot-send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Add FontAwesome for icons if not already included -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Chatbot Script -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('chatbot-toggle');
+    const closeBtn = document.getElementById('chatbot-close');
+    const chatWindow = document.getElementById('chatbot-window');
+    const sendBtn = document.getElementById('chatbot-send');
+    const inputField = document.getElementById('chatbot-input');
+    const messagesContainer = document.getElementById('chatbot-messages');
+
+    let isOpen = false;
+
+    // Load marked.js to parse markdown
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+    document.head.appendChild(script);
+
+    function toggleChat() {
+      isOpen = !isOpen;
+      chatWindow.style.display = isOpen ? 'flex' : 'none';
+      if (isOpen) {
+        inputField.focus();
+      }
+    }
+
+    toggleBtn.addEventListener('click', toggleChat);
+    closeBtn.addEventListener('click', toggleChat);
+
+    async function sendMessage() {
+      const message = inputField.value.trim();
+      if (!message) return;
+
+      appendMessage(message, 'user');
+      inputField.value = '';
+
+      const loadingMsgId = appendLoading();
+
+      try {
+        const response = await fetch('/api/chatbot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        
+        const data = await response.json();
+        removeLoading(loadingMsgId);
+        
+        if (data.reply) {
+          appendMessage(data.reply, 'bot', true);
+        } else {
+          appendMessage('Sorry, I encountered an error.', 'bot');
+        }
+      } catch (err) {
+        removeLoading(loadingMsgId);
+        appendMessage('Sorry, I could not connect to the server.', 'bot');
+      }
+    }
+
+    function appendMessage(text, sender, parseMarkdown = false) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `chat-message ${sender}`;
+      
+      if (parseMarkdown && typeof marked !== 'undefined') {
+        msgDiv.innerHTML = marked.parse(text);
+        // Clean up some markdown styling
+        msgDiv.querySelectorAll('p').forEach(p => p.style.margin = '0 0 10px 0');
+      } else {
+        msgDiv.textContent = text;
+      }
+      
+      messagesContainer.appendChild(msgDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function appendLoading() {
+      const id = 'loading-' + Date.now();
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'chat-message bot chatbot-loading';
+      msgDiv.id = id;
+      msgDiv.textContent = 'Thinking...';
+      messagesContainer.appendChild(msgDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      return id;
+    }
+
+    function removeLoading(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  });
+</script>

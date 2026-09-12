@@ -37,8 +37,7 @@ exports.postHiring = (req, res, next) => {
 
   const user = req.session.user;
 
-  User.find().then(accounts => {
-    const matchedAccount = accounts.find(account => account.email === user.email);
+  User.findOne({ email: user.email }).then(matchedAccount => {
 
     if (!matchedAccount) {
       return res.render('Login', { error: 'User not found' });
@@ -89,8 +88,7 @@ exports.postJob = (req, res, next) => {
       }
 
       // Update actual user in database
-      User.find().then(accounts => {
-        const matchedAccount = accounts.find(account => account.email === user.email);
+      User.findOne({ email: user.email }).then(matchedAccount => {
 
         if (matchedAccount) {
           // ✅ Push job ID into matchedAccount before saving
@@ -241,9 +239,7 @@ exports.getDashboard = (req, res, next) => {
     return res.status(401).send("Unauthorized: No user session found");
   }
 
-  User.find()
-    .then(accounts => {
-      const matchedAccount = accounts.find(acc => acc.email === sessionUser.email);
+  User.findOne({ email: sessionUser.email }).then(matchedAccount => {
       if (!matchedAccount) {
         console.error("User not found for email:", sessionUser.email);
         return res.status(404).send("User not found");
@@ -313,9 +309,10 @@ exports.getProfile = (req, res, next) => {
   }
   // 2. Fetch user data from session
   const user = req.session.user;
-  Job.find().then(allJobs => {
-    const appliedJobs = allJobs.filter(job => user.jobsApplied.includes(job._id.toString()));
-    const bookmarkedJobs = allJobs.filter(job => user.bookmarkedJobs.includes(job._id.toString()));
+  Promise.all([
+    Job.find({ _id: { $in: user.jobsApplied || [] } }),
+    Job.find({ _id: { $in: user.bookmarkedJobs || [] } })
+  ]).then(([appliedJobs, bookmarkedJobs]) => {
     res.render('profile', { user: user, appliedJobs: appliedJobs, bookmarkedJobs: bookmarkedJobs });
   }).catch(err => {
     console.error("Error fetching jobs:", err);
@@ -336,8 +333,7 @@ exports.postSaveJob = (req, res, next) => {
   const { jobId } = req.body;
 
   // console.log("Job ID to bookmark:", jobId); // Debugging line
-  User.find().then(accounts => {
-    const matchingAccount = accounts.find(account => account.email === req.session.user.email);
+  User.findOne({ email: req.session.user.email }).then(matchingAccount => {
     if (!matchingAccount) {
       return res.render('Login', { error: 'User not found' });
     } else {
@@ -357,8 +353,7 @@ exports.postSaveJob = (req, res, next) => {
 };
 
 exports.postSubmitApplication = (req, res, next) => {
-  User.find().then(accounts => {
-    const matchedAccount = accounts.find(account => account.email === req.session.user.email);
+  User.findOne({ email: req.session.user.email }).then(matchedAccount => {
     if (!matchedAccount) {
       return res.render('Login', { error: 'User not found' });
     }
@@ -453,8 +448,7 @@ exports.postStartChat = (req, res, next) => {
   const { email } = req.body;
   const userEmail = req.session.email;
 
-  User.find().then(accounts => {
-    const matchedAccount = accounts.find(account => account.email === email);
+  User.findOne({ email: email }).then(matchedAccount => {
     if (!matchedAccount.chattedAccount.includes(userEmail)) {
       matchedAccount.chattedAccount.push(userEmail);
       matchedAccount.conversations.push([]);
@@ -465,8 +459,7 @@ exports.postStartChat = (req, res, next) => {
     });
   })
 
-  User.find().then(accounts => {
-    const matchedAccount = accounts.find(account => account.email === userEmail);
+  User.findOne({ email: userEmail }).then(matchedAccount => {
     if (!matchedAccount.chattedAccount.includes(email)) {
       matchedAccount.chattedAccount.push(email);
       matchedAccount.conversations.push([]);
@@ -495,8 +488,7 @@ exports.postSendMsg = (req, res, next) => {
   }
 
   if (recipientEmail === 'bot@workzap.com') {
-    return User.find().then(accounts => {
-      const matchedAccount = accounts.find(account => account.email === userEmail);
+    return User.findOne({ email: userEmail }).then(matchedAccount => {
       if (!matchedAccount) throw new Error('Sender not found');
 
       let conversations = matchedAccount.conversations || [];
@@ -561,8 +553,7 @@ exports.postSendMsg = (req, res, next) => {
 
 
   // Helper promise to update recipient
-  const updateRecipient = User.find().then(accounts => {
-    const matchedAccount = accounts.find(account => account.email === recipientEmail);
+  const updateRecipient = User.findOne({ email: recipientEmail }).then(matchedAccount => {
     if (!matchedAccount) throw new Error('Recipient not found');
 
     const index = matchedAccount.chattedAccount.indexOf(userEmail);
@@ -581,8 +572,7 @@ exports.postSendMsg = (req, res, next) => {
   });
 
   // Helper promise to update sender
-  const updateSender = User.find().then(accounts => {
-    const matchedAccount = accounts.find(account => account.email === userEmail);
+  const updateSender = User.findOne({ email: userEmail }).then(matchedAccount => {
     if (!matchedAccount) throw new Error('Sender not found');
 
     const index = matchedAccount.chattedAccount.indexOf(recipientEmail);

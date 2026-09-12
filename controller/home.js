@@ -1,56 +1,54 @@
 const User = require("../models/User");
 const Worker = require("../models/Worker");
 
-
-
 exports.getHome=(req,res,next)=>{
   res.render('home', { showPopup: false });
 };
 
 exports.getLogin=(req,res,next)=>{
     res.render('Login');
-    
-  };
+};
 
- exports.postLogout = (req, res, next) => {
+exports.postLogout = (req, res, next) => {
   req.session.destroy(() => {
     res.redirect('/Login');
   });
 };
 
-  exports.getForm=(req,res,next)=>{
-    res.render('form');
-  };
+exports.getForm=(req,res,next)=>{
+  res.render('form');
+};
 
-  exports.getJoblisting=(req,res,next)=>{
-    res.render('joblisting');
-  };
+exports.getJoblisting=(req,res,next)=>{
+  res.render('joblisting');
+};
 
-  exports.getPostjob=(req,res,next)=>{
-    res.render('postjob');
-  };
+exports.getPostjob=(req,res,next)=>{
+  res.render('postjob');
+};
 
-  exports.gethelp = (req,res,next) =>{
-    res.render('Help-support');
+exports.gethelp = (req,res,next) =>{
+  res.render('Help-support');
+};
+
+exports.getAbout =(req,res,next) =>{
+  res.render('About-us');
+};
+
+exports.getContact =(req,res,next)=>{
+  res.render('Contact');
+};
+
+exports.getChat = (req, res, next) => {
+  if (!req.session.isLoggedIn || !req.session.user) {
+    return res.redirect('/Login');
   }
-  exports.getAbout =(req,res,next) =>{
-    res.render('About-us');
-  }
-  exports.getContact =(req,res,next)=>{
-    res.render('Contact');
-  }
+  const userId = req.session.user.id;
 
-
-  exports.getChat = (req, res, next) => {
-    if(!req.session.isLoggedIn){
-      res.render('Login');
-    }
-  User.find()
-    .then(accounts => {
-      const matchedAccount = accounts.find(account => account.email === req.session.email);
-
+  User.findById(userId)
+    .then(matchedAccount => {
       if (!matchedAccount) {
-        console.error('No matching account found for session email:', req.session.email);
+        console.error('No matching account found for session user ID:', userId);
         return res.render('Chat', {
           chattedAccount: [],
           chatObject: { recipientEmail: "", message: "" },
@@ -90,12 +88,15 @@ exports.getLogin=(req,res,next)=>{
 exports.postChat = (req, res, next) => {
   const { index, email } = req.body;
 
-  User.find()
-    .then(accounts => {
-      const matchedAccount = accounts.find(account => account.email === req.session.email);
+  if (!req.session.isLoggedIn || !req.session.user) {
+    return res.redirect('/Login');
+  }
+  const userId = req.session.user.id;
 
+  User.findById(userId)
+    .then(matchedAccount => {
       if (!matchedAccount) {
-        console.error('No matching account found for session email:', req.session.email);
+        console.error('No matching account found for session user ID:', userId);
         return res.render('Chat', {
           chattedAccount: [],
           chatObject: { recipientEmail: "", message: "" },
@@ -111,7 +112,7 @@ exports.postChat = (req, res, next) => {
         conversationList.unshift([{ email: 'bot@workzap.com', message: 'Hello! I am the WorkZap Bot. Type "options" to see what I can help you with!', timestamp: new Date() }]);
       }
       const chatObject = conversationList[index] || { recipientEmail: "", message: "" };
-      console.log(chatObject);
+      
       if(chatObject.length > 6){
         const diff = chatObject.length - 6;
         chatObject.splice(0,diff);
@@ -130,40 +131,40 @@ exports.postChat = (req, res, next) => {
         selectedAccount: ""
       });
     });
-
-  console.log('Incoming POST /chat:', req.body);
 };
 
 exports.postApplicantHire = (req,res,next)=>{
   const {email} = req.body;
-  // console.log(req.body);
-  User.find().then(accounts => {
-        const matchedAccount = accounts.find(account => account.email === req.session.email);
+  if (!req.session.isLoggedIn || !req.session.user) {
+    return res.redirect('/Login');
+  }
+  const userId = req.session.user.id;
 
-        if (matchedAccount) {
-          if (!Array.isArray(matchedAccount.hiredWorkers)) {
-            matchedAccount.hiredWorkers = [];
+  User.findById(userId).then(matchedAccount => {
+    if (matchedAccount) {
+      if (!Array.isArray(matchedAccount.hiredWorkers)) {
+        matchedAccount.hiredWorkers = [];
+      }
+      Worker.findOne({ email: email }).then(matchedWorker => {
+        if (matchedWorker) {
+          const workerIdStr = matchedWorker._id.toString();
+          if (!matchedAccount.hiredWorkers.some(id => id.toString() === workerIdStr)) {
+            matchedAccount.hiredWorkers.push(workerIdStr);
           }
-          Worker.find().then(worker=>{
-            const matchedWorker = worker.find(workers => workers.email === email);
-            if (matchedWorker) {
-                matchedAccount.hiredWorkers.push(matchedWorker._id);
-            }
-            
-            matchedAccount.save()
-                .then(() => {
-                // console.log("User account updated with posted job.");
-                // res.render('host-home', { jobId: savedJob._id }); // Optional: pass jobId to view
-                res.redirect("/dashboard");
-                })
-                .catch(err => {
-                console.error("Error updating user account:", err);
-                res.status(500).send("Failed to update user account.");
-                });
-          });
-        } else {
-          console.error("User not found in database.");
-          res.status(404).send("User not found.");
         }
+        
+        matchedAccount.save()
+          .then(() => {
+            res.redirect("/dashboard");
+          })
+          .catch(err => {
+            console.error("Error updating user account:", err);
+            res.status(500).send("Failed to update user account.");
+          });
       });
-}
+    } else {
+      console.error("User not found in database.");
+      res.status(404).send("User not found.");
+    }
+  });
+};
