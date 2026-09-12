@@ -26,7 +26,7 @@ app.use(express.json()); // For handling JSON POST requests
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-3.6-flash",
+  model: "gemini-1.5-flash",
   systemInstruction: "You are the official AI assistant for WorkZap, a modern platform designed to connect skilled workers with potential employers or 'hirers'. You should assist users with navigating the platform, understanding how to apply for jobs, how to hire employees, use the dashboard, and manage payroll/reports. Always be polite, helpful, and concise. You can also answer general questions, but try to tie them back to professional development, freelancing, or the WorkZap ecosystem whenever possible."
 });
 
