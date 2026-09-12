@@ -43,10 +43,10 @@ const store = new mongodbsession({
 
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your_secret_key', 
-  resave: false,
-  saveUninitialized: true,
-  store: store,
+    secret: process.env.SESSION_SECRET || 'your_secret_key',
+    resave: false,
+    saveUninitialized: false,
+    store: store
 }));
 
 
@@ -77,8 +77,8 @@ app.post('/api/chatbot', async (req, res) => {
     const text = response.text();
     res.json({ reply: text });
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    res.status(500).json({ error: 'Failed to generate response' });
+    console.error("Gemini API Error:", error.message || error);
+    res.status(500).json({ error: 'Failed to generate response', details: error.message || error.toString() });
   }
 });
 
