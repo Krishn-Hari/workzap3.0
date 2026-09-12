@@ -1,15 +1,16 @@
-async function test() {
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+require('dotenv').config();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+
+async function main() {
   try {
-    const res = await fetch('http://localhost:3001/api/chatbot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: "Hello" })
-    });
-    console.log("Status:", res.status);
-    const text = await res.text();
-    console.log("Response:", text);
+    const result = await model.generateContent("Hello!");
+    const response = await result.response;
+    const text = response.text();
+    console.log("Success:", text);
   } catch(e) {
-    console.log("Error:", e.message);
+    console.error("Error:", e.message);
   }
 }
-test();
+main();
