@@ -123,7 +123,7 @@ exports.getHired = (req, res, next) => {
   if (!req.session.isLoggedIn || !req.session.user) {
     return res.redirect('/Login');
   }
-  const userId = req.session.user.id;
+  const userId = req.session.user.id || req.session.user._id;
 
   User.findById(userId)
     .then(userDoc => {
@@ -245,7 +245,8 @@ exports.getDashboard = (req, res, next) => {
         return res.status(404).send("User not found");
       }
 
-      req.session.user = matchedAccount;
+      // Do not overwrite req.session.user with the full Mongoose document here
+      // req.session.user = matchedAccount;
 
       Job.find()
         .then(allJobs => {
