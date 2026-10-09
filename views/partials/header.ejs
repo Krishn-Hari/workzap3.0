@@ -11,6 +11,7 @@
             <a href="/home" class="wzap-nav-link active">Home</a>
             <% if(userType === 'hirer'){ %>
             <a href="/host" class="wzap-nav-link">Hire</a>
+            <a href="/postjob" class="wzap-nav-link">Post Job</a>
             <a href="/hired" class="wzap-nav-link">Manage Employees</a>
             <a href="/dashboard" class="wzap-nav-link">Dashboard</a>
             <!-- <a href="/payroll" class="wzap-nav-link">Payroll</a>
@@ -301,5 +302,6 @@ function toggleUserMenu() {
     const menu = document.getElementById('user-menu');
     menu.classList.toggle('hidden');
 }
-
 </script>
+
+<%- include('chatbot') %>
